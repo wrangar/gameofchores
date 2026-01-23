@@ -54,7 +54,8 @@ export default function RewardsLayer() {
       if (evt.type === "streak_fireworks") push({ id, kind: "streak", streak: evt.streak });
       if (evt.type === "toast") push({ id, kind: "toast", message: evt.message });
     });
-    return off;
+    return () => {
+    off();
   }, []);
 
   return (
