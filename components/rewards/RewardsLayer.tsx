@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import type { RewardEvent } from "@/lib/rewards";
-import { rewards } from "@/lib/rewards";
+import type { RewardEvent } from "../../lib/rewards";
+import { rewards } from "../../lib/rewards";
 
 type OverlayItem =
   | { id: string; kind: "coin"; amountRs: number }
