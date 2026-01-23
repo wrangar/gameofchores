@@ -117,6 +117,7 @@ export default async function HouseholdPage() {
           <button style={{ padding: '10px 12px', width: 'fit-content' }}>Save entry</button>
         </form>
       </div>
+      </div>
 
       <h3 style={{ marginTop: 12 }}>Recent entries</h3>
       <div style={{ display: 'grid', gap: 10 }}>

@@ -171,6 +171,7 @@ export default async function ReportsPage({
           </tbody>
         </table>
       </div>
+      </div>
 
       {isParent ? (
         <>

@@ -186,7 +186,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Re
       {role === "parent" ? (
         <div className="card" style={{ padding: 14, display: "grid", gap: 10 }}>
           <div style={{ fontWeight: 900 }}>Categories</div>
-          <form action={addCategory} style={{ display: "flex", gap: 10, flexWrap: "wrap", opacity: missingPurchasesSchema ? 0.6 : 1 }}>
+          <form action={addCategory} style={{ display: "flex", gap: 8, flexWrap: "wrap", opacity: missingPurchasesSchema ? 0.6 : 1 }}>
             <fieldset disabled={missingPurchasesSchema} style={{ border: "none", padding: 0, margin: 0, display: "contents" }}>
               <input className="input" name="name" placeholder="New category (e.g., Snacks)" required />
               <button className="btn">Add</button>
@@ -231,6 +231,5 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Re
           </table></div>
         </div>
       </div>
-    </div>
   );
 }
