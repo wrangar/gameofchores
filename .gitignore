@@ -1,26 +1,5 @@
-# dependencies
-node_modules
-
-# next
-.next
-out
-
-# vercel
-.vercel
-
-# env
-.env
-.env.*
-
-# logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# OS
+node_modules/
+.next/
+.vercel/
+.env*
 .DS_Store
-Thumbs.db
-
-# turbo / cache
-.turbo

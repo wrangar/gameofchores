@@ -32,16 +32,17 @@ export default async function TransactionsPage() {
 
   return (
     <div style={{ display: 'grid', gap: 12 }}>
-      <h2 style={{ margin: 0 }}>Transactions</h2>
-      <p style={{ margin: 0, opacity: 0.8 }}>
+      <h2 style={{ margin: 0, color: 'white' }}>Transactions</h2>
+      <p style={{ margin: 0, opacity: 0.9, color: 'rgba(255,255,255,0.85)' }}>
         Today’s allocations follow the family rule: 50% spend, 20% charity, 30% savings. Savings is matched by parents and moved to Invest (locked 4 months).
       </p>
       <TransactionsClient transactions={todays as any[]} />
 
       <h3 style={{ marginTop: 16 }}>Recent (read-only)</h3>
-      <div style={{ display: 'grid', gap: 10 }}>
+      <div className="card" style={{ padding: 12 }}>
+        <div style={{ display: 'grid', gap: 10 }}>
         {(txns ?? []).map((t) => (
-          <div key={t.id} style={{ border: '1px solid #eee', padding: 12, borderRadius: 8 }}>
+          <div key={t.id} className="card" style={{ padding: 12, background: 'rgba(255,255,255,0.86)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
               <div>
                 <div style={{ fontWeight: 600 }}>{t.source}</div>
@@ -57,6 +58,7 @@ export default async function TransactionsPage() {
           </div>
         ))}
         {(txns ?? []).length === 0 ? <p style={{ opacity: 0.8 }}>No transactions yet.</p> : null}
+        </div>
       </div>
     </div>
   );

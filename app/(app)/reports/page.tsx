@@ -119,15 +119,15 @@ export default async function ReportsPage({
 
   return (
     <div style={{ display: 'grid', gap: 14 }}>
-      <h2 style={{ margin: 0 }}>Reports</h2>
+      <h2 style={{ margin: 0, color: 'white' }}>Reports</h2>
       <ReportFilters defaultFrom={defaultFrom} defaultTo={defaultTo} />
-      <p style={{ margin: 0, opacity: 0.8 }}>
+      <p style={{ margin: 0, opacity: 0.9, color: 'rgba(255,255,255,0.85)' }}>
         Period: <b>{from}</b> to <b>{to}</b>
       </p>
 
       <h3 style={{ marginTop: 10 }}>{isParent ? 'Kids summary' : 'My summary'}</h3>
       <div className="card" style={{ padding: 12, overflowX: 'auto' }}>
-        <table className="table" style={{ minWidth: 820 }}>
+        <div className="tableWrap"><table className="table">
           <thead>
             <tr>
               <th>Kid</th>
@@ -175,13 +175,24 @@ export default async function ReportsPage({
       {isParent ? (
         <>
           <h3 style={{ marginTop: 10 }}>Household summary</h3>
-          <div style={{ border: '1px solid #ddd', padding: 12, borderRadius: 8 }}>
-            <div>Income: <b>{formatRs(householdSummary?.income ?? 0)}</b></div>
-            <div>Expenses: <b>{formatRs(householdSummary?.expense ?? 0)}</b></div>
-            <div style={{ marginTop: 6 }}>Net: <b>{formatRs((householdSummary?.income ?? 0) - (householdSummary?.expense ?? 0))}</b></div>
+        <div className="kpiGrid">
+          <div className="tile">
+            <div className="muted" style={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 12 }}>Income</div>
+            <div style={{ fontSize: 26, fontWeight: 1000, marginTop: 6 }}>{formatRs(householdSummary?.income ?? 0)}</div>
           </div>
+          <div className="tile">
+            <div className="muted" style={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 12 }}>Expenses</div>
+            <div style={{ fontSize: 26, fontWeight: 1000, marginTop: 6 }}>{formatRs(householdSummary?.expense ?? 0)}</div>
+          </div>
+          <div className="tile">
+            <div className="muted" style={{ fontWeight: 900, textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 12 }}>Net</div>
+            <div style={{ fontSize: 26, fontWeight: 1000, marginTop: 6 }}>
+              {formatRs((householdSummary?.income ?? 0) - (householdSummary?.expense ?? 0))}
+            </div>
+          </div>
+        </div>
 
-          <h4 style={{ marginTop: 6 }}>Expenses by category</h4>
+        <h4 style={{ marginTop: 6 }}>Expenses by category</h4>
           <div style={{ display: 'grid', gap: 8 }}>
             {categoryTotals.slice(0, 10).map((c) => (
               <div key={c.name} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, border: '1px solid #eee', padding: 10, borderRadius: 8 }}>

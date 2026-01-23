@@ -71,13 +71,14 @@ export default async function HouseholdPage() {
       <h2 style={{ margin: 0 }}>Household Ledger</h2>
 
       <div style={{ display: 'grid', gap: 12, gridTemplateColumns: '1fr 1fr' }}>
-        <form action={createCategory} style={{ border: '1px solid #eee', padding: 12, borderRadius: 8, display: 'grid', gap: 10 }}>
+        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+        <form action={createCategory} className="card" style={{ padding: 12, display: 'grid', gap: 10 }}>
           <div style={{ fontWeight: 600 }}>Create category</div>
           <input name="name" placeholder="Groceries" required />
           <button style={{ padding: '10px 12px', width: 'fit-content' }}>Add</button>
         </form>
 
-        <form action={createEntry} style={{ border: '1px solid #eee', padding: 12, borderRadius: 8, display: 'grid', gap: 10 }}>
+        <form action={createEntry} className="card" style={{ padding: 12, display: 'grid', gap: 10 }}>
           <div style={{ fontWeight: 600 }}>Add entry</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             <label style={{ display: 'grid', gap: 4 }}>

@@ -228,7 +228,7 @@ export default async function PurchasesPage({ searchParams }: { searchParams: Re
                 <tr><td colSpan={role === "parent" ? 5 : 4} className="muted">No purchases in this period.</td></tr>
               ) : null}
             </tbody>
-          </table>
+          </table></div>
         </div>
       </div>
     </div>
