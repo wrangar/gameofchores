@@ -16,6 +16,12 @@
     "types": [
       "node"
     ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    },
     "allowJs": true,
     "incremental": true,
     "esModuleInterop": true,

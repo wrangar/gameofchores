@@ -1,18 +1,13 @@
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 import { createClient } from '../../lib/supabase/server';
+import RewardsLayer from '../../components/rewards/RewardsLayer';
 
 function NavLink({ href, label }: { href: string; label: string }) {
   return (
     <a
       href={href}
-      style={{
-        textDecoration: 'none',
-        color: 'inherit',
-        padding: '10px 12px',
-        borderRadius: 12,
-        border: '1px solid transparent',
-      }}
+      className="gocNavLink"
     >
       {label}
     </a>
@@ -56,47 +51,49 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const tabs = role === 'parent' ? parentTabs : role === 'child' ? childTabs : [{ href: '/dashboard', label: 'Dashboard' }];
 
   return (
-    <div style={{ minHeight: '100vh', background: '#fafafa' }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '18px 16px 88px' }}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-          <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', color: 'inherit' }}>
-            <div style={{ width: 38, height: 38, borderRadius: 14, background: '#f0eefe', display: 'grid', placeItems: 'center', fontWeight: 900 }}>
-              ₨
+    <div className="gocShell">
+      <div className="gocContainer">
+        <header className="gocHeader">
+          <a href="/dashboard" className="gocBrand">
+            <div className="gocLogoBox" aria-hidden>
+              <img
+                src="/art/chorex-login.png"
+                alt=""
+                width={44}
+                height={44}
+                style={{ width: 44, height: 44, objectFit: 'cover' }}
+              />
             </div>
             <div>
-              <div style={{ fontWeight: 900, letterSpacing: 0.2 }}>gameofchores.fun</div>
-              <div style={{ opacity: 0.7, fontSize: 12 }}>{role === 'parent' ? 'Parent' : role === 'child' ? 'Kid' : 'Member'}</div>
+              <div style={{ fontWeight: 950, letterSpacing: 0.2 }}>Game of Chores</div>
+              <div style={{ opacity: 0.85, fontSize: 12 }}>
+                {role === 'parent' ? 'Parent' : role === 'child' ? 'Kid' : 'Member'} • gameofchores.fun
+              </div>
             </div>
           </a>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontWeight: 800, fontSize: 13 }}>{email}</div>
-              <div style={{ opacity: 0.7, fontSize: 12 }}>{role}</div>
+            <div className="gocHeaderCard" style={{ textAlign: 'right' }}>
+              <div style={{ fontWeight: 900, fontSize: 13 }}>{email}</div>
+              <div style={{ opacity: 0.85, fontSize: 12 }}>{role}</div>
             </div>
-            <div style={{ width: 40, height: 40, borderRadius: 999, background: '#f6d7a3', display: 'grid', placeItems: 'center', fontWeight: 900 }}>
+            <div className="gocHeaderCard" style={{ width: 44, height: 44, borderRadius: 999, display: 'grid', placeItems: 'center', fontWeight: 950 }}>
               {initial}
             </div>
-            <a href="/logout" title="Logout" style={{ textDecoration: 'none', padding: 10, borderRadius: 12, border: '1px solid #eee', background: 'white' }}>
+            <a href="/logout" title="Logout" className="gocHeaderCard" style={{ textDecoration: 'none', padding: 12 }}>
               ↩
             </a>
           </div>
         </header>
 
         {children}
+
+        {/* Global rewards overlay (kid-friendly animations & sounds) */}
+        <RewardsLayer />
       </div>
 
-      <nav
-        style={{
-          position: 'fixed',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'white',
-          borderTop: '1px solid #eee',
-        }}
-      >
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: 10, display: 'flex', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
+      <nav className="gocNav">
+        <div className="gocNavInner">
           {tabs.map((t) => (
             <NavLink key={t.href} href={t.href} label={t.label} />
           ))}
