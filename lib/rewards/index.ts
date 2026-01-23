@@ -57,7 +57,9 @@ class RewardsBus {
   private listeners = new Set<Listener>();
   on(fn: Listener) {
     this.listeners.add(fn);
-    return () => this.listeners.delete(fn);
+    return () => {
+  this.listeners.delete(fn);
+};
   }
   emit(evt: RewardEvent) {
     for (const fn of this.listeners) fn(evt);
