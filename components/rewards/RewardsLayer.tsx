@@ -46,33 +46,18 @@ export default function RewardsLayer() {
   };
 
   useEffect(() => {
-  const unsubscribe = rewards.on((evt: RewardEvent) => {
-    const id = uid();
-
-    switch (evt.type) {
-      case "coin_burst":
-        push({ id, kind: "coin", amountRs: evt.amountRs }, 900);
-        break;
-      case "confetti_small":
-        push({ id, kind: "confetti" }, 800);
-        break;
-      case "badge_unlock":
-        push({ id, kind: "badge", badgeKey: evt.badgeKey }, 1500);
-        break;
-      case "streak_fireworks":
-        push({ id, kind: "streak", streak: evt.streak }, 1200);
-        break;
-      case "toast":
-        push({ id, kind: "toast", message: evt.message }, 1800);
-        break;
-    }
-  });
-
-  return () => {
-    // Ensure cleanup returns void (not boolean, not array)
-    unsubscribe();
-  };
-}, []);
+    const off = rewards.on((evt: RewardEvent) => {
+      const id = uid();
+      if (evt.type === "coin_burst") push({ id, kind: "coin", amountRs: evt.amountRs });
+      if (evt.type === "confetti_small") push({ id, kind: "confetti" });
+      if (evt.type === "badge_unlock") push({ id, kind: "badge", badgeKey: evt.badgeKey });
+      if (evt.type === "streak_fireworks") push({ id, kind: "streak", streak: evt.streak });
+      if (evt.type === "toast") push({ id, kind: "toast", message: evt.message });
+    });
+    return () => {
+      off();
+    };
+  }, []);
 
   return (
     <div className="pointer-events-none fixed inset-0 z-[9999]">

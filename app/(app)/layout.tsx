@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 import { createClient } from '../../lib/supabase/server';
+import RewardsLayer from '../../components/rewards/RewardsLayer';
 
 function NavLink({ href, label }: { href: string; label: string }) {
   return (
@@ -84,6 +85,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         </header>
 
         {children}
+
+        {/* Global rewards overlay (kid-friendly animations & sounds) */}
+        <RewardsLayer />
       </div>
 
       <nav

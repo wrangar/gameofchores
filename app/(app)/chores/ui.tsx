@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '../../../lib/supabase/browser';
 import { formatRs } from '../../../lib/money';
+import { useRewards } from '../../../lib/rewards/useRewards';
 
 type ChoreRow = {
   chore_id: string;
@@ -21,6 +22,7 @@ export default function ChoresClient({
 }) {
   const supabase = createClient();
   const router = useRouter();
+  const rewards = useRewards('kid');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [local, setLocal] = useState(chores);
@@ -28,11 +30,20 @@ export default function ChoresClient({
   const markDone = async (choreId: string) => {
     setBusyId(choreId);
     setMsg(null);
+
+    // Game feel
+    rewards.tap();
+
     const { data, error } = await supabase.rpc('record_chore_completion', { p_chore_id: choreId });
     if (error) {
       setMsg(error.message);
     } else {
       setLocal((prev) => prev.map((c) => (c.chore_id === choreId ? { ...c, completed_today: true } : c)));
+
+      const amt = local.find((c) => c.chore_id === choreId)?.price_rs ?? 0;
+      // Celebrate the action (even if approval is pending, this keeps kids engaged)
+      rewards.choreCompleted(amt);
+
       setMsg('Submitted for approval. Earnings will be committed after Mom approves.');
       // Refresh server-rendered wallet/reports data so earnings show immediately.
       router.refresh();
