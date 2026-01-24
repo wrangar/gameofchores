@@ -56,9 +56,10 @@ function savePrefs(p: RewardsPrefs) {
 class RewardsBus {
   private listeners = new Set<Listener>();
   on(fn: Listener) {
-    this.listeners.add(fn);
-    return () => {
-  this.listeners.delete(fn);
+  this.listeners.add(fn);
+  return () => {
+    this.listeners.delete(fn);
+  };
 };
   }
   emit(evt: RewardEvent) {
