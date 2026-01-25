@@ -3,13 +3,12 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/browser";
-import { formatRs } from "@/lib/money";
 import { rewards } from "@/lib/rewards";
 
 type ChoreRow = {
   chore_id: string;
   title: string;
-  price_rs: number; // stored as integer Rs in DB (price_cents used as Rs in your app)
+  price_rs: number; // kept for rewards only; not shown in UI
   approved_today: boolean;
   pending_today: boolean;
   pending_completion_id: string | null;
@@ -33,7 +32,7 @@ export default function ChoresClient({
     setBusyId(choreId);
 
     try {
-      const { data, error } = await supabase.rpc("record_chore_completion", {
+      const { error } = await supabase.rpc("record_chore_completion", {
         p_chore_id: choreId,
       });
 
@@ -43,7 +42,7 @@ export default function ChoresClient({
       rewards.emit({ type: "coin_burst", amountRs });
       rewards.emit({ type: "confetti_small" });
 
-      setMsg("Submitted for approval. Earnings update after Mom approves.");
+      setMsg("Nice! Sent to Mom for approval.");
       router.refresh();
     } catch (e: any) {
       setMsg(e?.message ?? "Could not submit chore.");
@@ -64,7 +63,7 @@ export default function ChoresClient({
 
       rewards.emit({ type: "confetti_small" });
 
-      setMsg("Submission reverted. You can submit again if needed.");
+      setMsg("Undone. You can submit it again if needed.");
       router.refresh();
     } catch (e: any) {
       setMsg(e?.message ?? "Could not undo submission.");
@@ -105,7 +104,7 @@ export default function ChoresClient({
               border: "1px solid rgba(34,211,238,0.35)",
             };
           } else if (c.pending_today) {
-            statusLabel = "Pending Mom approval ⏳";
+            statusLabel = "Waiting for Mom ⏳";
             statusStyle = {
               background: "rgba(250,204,21,0.12)",
               border: "1px solid rgba(250,204,21,0.35)",
@@ -136,9 +135,6 @@ export default function ChoresClient({
                   <div style={{ fontWeight: 900, fontSize: 16 }}>
                     {c.title}
                   </div>
-                  <div style={{ opacity: 0.8, fontSize: 13 }}>
-                    Reward: <b>{formatRs(c.price_rs)}</b>
-                  </div>
                 </div>
 
                 <div
@@ -155,7 +151,6 @@ export default function ChoresClient({
               </div>
 
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                {/* Primary action */}
                 {!c.approved_today && !c.pending_today ? (
                   <button
                     className="btn"
@@ -171,7 +166,6 @@ export default function ChoresClient({
                   </button>
                 ) : null}
 
-                {/* Undo action only for pending */}
                 {c.pending_today && c.pending_completion_id ? (
                   <button
                     className="btn"
@@ -187,14 +181,13 @@ export default function ChoresClient({
                       border: "1px solid rgba(244,114,182,0.35)",
                     }}
                   >
-                    {isBusy ? "Undoing..." : "Undo (before approval)"}
+                    {isBusy ? "Undoing..." : "Undo"}
                   </button>
                 ) : null}
 
-                {/* Approved state */}
                 {c.approved_today ? (
                   <div style={{ opacity: 0.8, fontSize: 13, paddingTop: 8 }}>
-                    Nice work. This one is approved and counted in your wallet.
+                    Great job — approved!
                   </div>
                 ) : null}
               </div>
