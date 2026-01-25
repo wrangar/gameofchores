@@ -61,7 +61,7 @@ export default async function DashboardPage() {
     );
   }
 
-  // IMPORTANT: kid dashboards must be kid-scoped; parent dashboards are family-scoped.
+  // Ledger query (kids are kid-scoped; parents are family-scoped)
   let ledgerTodayQuery = supabase
     .from('ledger_transactions')
     .select('source,amount_cents,spend_cents,charity_cents,invest_cents,parent_match_cents,kid_id')
@@ -74,12 +74,13 @@ export default async function DashboardPage() {
 
   const { data: ledgerToday } = await ledgerTodayQuery;
 
+  // Totals
   let earnedToday = 0;
   let spendToday = 0;
   let charityToday = 0;
-  let savingsContribToday = 0; // kid's contribution = invest - match
-  let investToday = 0; // savings + match
-  let parentMatchToday = 0; // parent top-up (match)
+  let savingsContribToday = 0; // invest - match (kid contribution)
+  let investToday = 0;
+  let parentMatchToday = 0;
   let parentPayableToday = 0; // earned + match
 
   for (const t of ledgerToday ?? []) {
@@ -96,12 +97,12 @@ export default async function DashboardPage() {
     charityToday += charity;
     investToday += invest;
     parentMatchToday += match;
-
     savingsContribToday += invest - match;
+
     parentPayableToday += amount + match;
   }
 
-  // recent activity (kid-scoped for kids; family-scoped for parents)
+  // Recent activity
   let recentQuery = supabase
     .from('ledger_transactions')
     .select('id,txn_date,source,description,amount_cents,spend_cents,charity_cents,invest_cents,parent_match_cents,created_at')
@@ -115,7 +116,7 @@ export default async function DashboardPage() {
 
   const { data: recentActivity } = await recentQuery;
 
-  let kids: any[] = [];
+  // Parent MTD summary
   let parentMonthByKid: Array<{
     kid_id: string;
     display_name: string;
@@ -133,14 +134,11 @@ export default async function DashboardPage() {
     | null = null;
 
   if (role === 'parent') {
-    // FIX: scope kids to the same family
-    const { data } = await supabase
+    const { data: kids } = await supabase
       .from('kids')
       .select('id,display_name,theme_color')
       .eq('family_id', familyId)
       .order('display_name');
-
-    kids = data ?? [];
 
     const from = iso(startOfMonth(new Date()));
     const to = today;
@@ -165,7 +163,7 @@ export default async function DashboardPage() {
       const invest = Number(row.invest_cents ?? 0);
       const match = Number(row.parent_match_cents ?? 0);
 
-      const savings = invest - match; // kid contribution
+      const savings = invest - match;
       const payable = amount + match;
 
       const agg =
@@ -197,37 +195,52 @@ export default async function DashboardPage() {
     });
   }
 
+  const isChild = role === 'child';
+
   return (
     <div style={{ display: 'grid', gap: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <div style={{ fontSize: 28, fontWeight: 900, margin: 0 }}>My Wallet</div>
-          <div style={{ opacity: 0.75 }}>Wallet totals update only after Mom approves (Approved earnings live in the ledger).</div>
+          <div style={{ fontSize: 28, fontWeight: 900, margin: 0 }}>Dashboard</div>
+          <div style={{ opacity: 0.75 }}>
+            Totals update only after Mom approves (approved earnings live in the ledger).
+          </div>
         </div>
         <div style={{ opacity: 0.8, fontSize: 13 }}>
           Signed in as <b>{user.email}</b> ({role})
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14 }}>
-        <Card title="Spending" subtitle="Money you can use now (default 50%)" tint="var(--lav-50)">
-          <div style={{ fontSize: 40, fontWeight: 900 }}>{formatRs(spendToday)}</div>
-        </Card>
+      {/* KID VIEW: no allocation tiles */}
+      {isChild ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14 }}>
+          <Card title="Approved Earned Today" subtitle="Only approved chores count here" tint="var(--lav-50)">
+            <div style={{ fontSize: 40, fontWeight: 900 }}>{formatRs(earnedToday)}</div>
+          </Card>
+        </div>
+      ) : (
+        // PARENT VIEW: keep full allocation breakdown
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14 }}>
+          <Card title="Spending" subtitle="Money available now" tint="var(--lav-50)">
+            <div style={{ fontSize: 40, fontWeight: 900 }}>{formatRs(spendToday)}</div>
+          </Card>
 
-        <Card title="Charity" subtitle="For helping others (default 20%)" tint="var(--rose-100)">
-          <div style={{ fontSize: 40, fontWeight: 900 }}>{formatRs(charityToday)}</div>
-        </Card>
+          <Card title="Charity" subtitle="Reserved for giving" tint="var(--rose-100)">
+            <div style={{ fontSize: 40, fontWeight: 900 }}>{formatRs(charityToday)}</div>
+          </Card>
 
-        <Card title="Savings" subtitle="Your 30% contribution (computed)" tint="var(--mint-100)">
-          <div style={{ fontSize: 40, fontWeight: 900 }}>{formatRs(savingsContribToday)}</div>
-          <div style={{ marginTop: 8, opacity: 0.75, fontSize: 13 }}>Moved to Invest after parent match.</div>
-        </Card>
+          <Card title="Savings" subtitle="Kid contribution (computed)" tint="var(--mint-100)">
+            <div style={{ fontSize: 40, fontWeight: 900 }}>{formatRs(savingsContribToday)}</div>
+            <div style={{ marginTop: 8, opacity: 0.75, fontSize: 13 }}>Moved to Invest after parent match.</div>
+          </Card>
 
-        <Card title="Invest" subtitle="Savings + Parent match (locked)" tint="var(--sky-100)">
-          <div style={{ fontSize: 40, fontWeight: 900 }}>{formatRs(investToday)}</div>
-        </Card>
-      </div>
+          <Card title="Invest" subtitle="Savings + Parent match (locked)" tint="var(--sky-100)">
+            <div style={{ fontSize: 40, fontWeight: 900 }}>{formatRs(investToday)}</div>
+          </Card>
+        </div>
+      )}
 
+      {/* Parent payable */}
       {role === 'parent' ? (
         <div className="card" style={{ padding: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', alignItems: 'baseline' }}>
@@ -240,6 +253,7 @@ export default async function DashboardPage() {
         </div>
       ) : null}
 
+      {/* Parent month summary */}
       {role === 'parent' && parentMonthTotals ? (
         <div className="card" style={{ padding: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
@@ -291,7 +305,10 @@ export default async function DashboardPage() {
       ) : null}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
-        <Card title="Recent Activity" subtitle={(recentActivity ?? []).length ? 'Latest transactions (approved only)' : 'No approved transactions yet.'}>
+        <Card
+          title="Recent Activity"
+          subtitle={(recentActivity ?? []).length ? 'Latest approved transactions' : 'No approved transactions yet.'}
+        >
           <div style={{ display: 'grid', gap: 10 }}>
             {(recentActivity ?? []).map((t) => (
               <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'baseline' }}>
