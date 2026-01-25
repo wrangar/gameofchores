@@ -62,7 +62,7 @@ export default function ChoresClient({
       });
       if (error) throw new Error(error.message);
 
-      rewards.emit({ type: "pop" });
+      rewards.emit({ type: "confetti_small" });
 
       setMsg("Submission reverted. You can submit again if needed.");
       router.refresh();
