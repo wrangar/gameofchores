@@ -17,9 +17,10 @@ export default async function ChoresPage() {
     return <p>Chores view is for child accounts.</p>;
   }
 
+  // Mode 3: Show (1) all Daily chores; plus (2) Manual chores activated for today.
+  // Manual chores are activated when a parent sets a cell to "Manual" for a specific date.
   const today = new Date().toISOString().slice(0, 10);
 
-  // Assignments for today (Daily + Manual activated today)
   const { data: assigned, error } = await supabase
     .from('chore_assignments')
     .select(
@@ -43,22 +44,16 @@ export default async function ChoresPage() {
     return <p>Could not load chores: {error.message}</p>;
   }
 
-  // Completions today with status so we can distinguish Pending vs Approved
-  const { data: completionRows } = await supabase
+  // Completed today
+  const { data: completions } = await supabase
     .from('chore_completions')
-    .select('id,chore_id,status')
+    .select('chore_id')
     .eq('kid_id', roleRow.kid_id)
     .eq('completed_date', today);
 
-  const approvedSet = new Set<string>();
-  const pendingByChoreId = new Map<string, string>(); // chore_id -> completion_id
-  for (const r of completionRows ?? []) {
-    if (!r?.chore_id) continue;
-    if (r.status === 'APPROVED') approvedSet.add(r.chore_id);
-    if (r.status === 'PENDING_APPROVAL' && r.id) pendingByChoreId.set(r.chore_id, r.id);
-  }
+  const completedSet = new Set((completions ?? []).map((c: any) => c.chore_id));
 
-  // Earnings today (APPROVED only) = sum of CHORE_EARNING in ledger
+  // Earnings today (sum of CHORE_EARNING)
   const { data: earningsRows } = await supabase
     .from('ledger_transactions')
     .select('amount_cents')
@@ -66,12 +61,8 @@ export default async function ChoresPage() {
     .eq('txn_date', today)
     .eq('source', 'CHORE_EARNING');
 
-  const earnedToday = (earningsRows ?? []).reduce(
-    (sum: number, r: any) => sum + (Number(r.amount_cents) || 0),
-    0
-  );
+  const earnedToday = (earningsRows ?? []).reduce((sum: number, r: any) => sum + (Number(r.amount_cents) || 0), 0);
 
-  // Pending amount today = sum of chore prices for pending completions
   const { data: pendingRows } = await supabase
     .from('chore_completions')
     .select('id,chore_id,chores(price_cents)')
@@ -79,38 +70,22 @@ export default async function ChoresPage() {
     .eq('completed_date', today)
     .eq('status', 'PENDING_APPROVAL');
 
-  const pendingToday = (pendingRows ?? []).reduce(
-    (sum: number, r: any) => sum + (Number(r?.chores?.price_cents) || 0),
-    0
-  );
+  const pendingToday = (pendingRows ?? []).reduce((sum: number, r: any) => sum + (Number(r?.chores?.price_cents) || 0), 0);
 
   const chores = (assigned ?? [])
     .map((a: any) => a.chores)
     .filter((c: any) => !!c && c.active)
-    .map((c: any) => {
-      const pendingCompletionId = pendingByChoreId.get(c.id) ?? null;
-      return {
-        chore_id: c.id,
-        title: c.title,
-        price_rs: Number(c.price_cents) || 0,
-        approved_today: approvedSet.has(c.id),
-        pending_today: !!pendingCompletionId,
-        pending_completion_id: pendingCompletionId,
-      };
-    })
+    .map((c: any) => ({
+      chore_id: c.id,
+      title: c.title,
+      price_rs: Number(c.price_cents) || 0,
+      completed_today: completedSet.has(c.id),
+    }))
     .sort((a: any, b: any) => String(a.title).localeCompare(String(b.title)));
 
   return (
     <div style={{ display: 'grid', gap: 12 }}>
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'baseline',
-          justifyContent: 'space-between',
-          gap: 12,
-          flexWrap: 'wrap',
-        }}
-      >
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
           <h2 style={{ margin: 0 }}>Today’s Chores</h2>
           <div className="muted" style={{ marginTop: 4 }}>
@@ -122,16 +97,12 @@ export default async function ChoresPage() {
             })}
           </div>
         </div>
-
         <div className="pill" style={{ fontWeight: 800 }}>
           Approved today: {formatRs(earnedToday)}
         </div>
+        <div className="pill" style={{ fontWeight: 800, background: '#fff7ed', borderColor: '#fed7aa' }}>
+          Pending: {formatRs(pendingToday)}
 
-        <div
-          className="pill"
-          style={{ fontWeight: 800, background: '#fff7ed', borderColor: '#fed7aa' }}
-        >
-          Pending approval: {formatRs(pendingToday)}
         </div>
       </div>
 

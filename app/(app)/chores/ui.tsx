@@ -1,148 +1,75 @@
-"use client";
+'use client';
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/browser";
-import { formatRs } from "@/lib/money";
-import { rewards } from "@/lib/rewards";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '../../../lib/supabase/browser';
+import { formatRs } from '../../../lib/money';
+import { useRewards } from '../../../lib/rewards/useRewards';
 
 type ChoreRow = {
-  id: string;
+  chore_id: string;
   title: string;
-  price_cents: number;
-  status?: string | null;
-  completion_id?: string | null;
+  price_rs: number;
+  completed_today: boolean;
 };
 
 export default function ChoresClient({
-  kidId, // kept for compatibility with page.tsx (even if not used here)
+  kidId,
   chores,
 }: {
-  kidId: string | null;
+  kidId: string;
   chores: ChoreRow[];
 }) {
-  const supabase = useMemo(() => createClient(), []);
+  const supabase = createClient();
   const router = useRouter();
+  const rewards = useRewards('kid');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [local, setLocal] = useState(chores);
 
-  async function submit(choreId: string) {
-    setMsg(null);
+  const markDone = async (choreId: string) => {
     setBusyId(choreId);
-
-    try {
-      const { error } = await supabase.rpc("record_chore_completion", {
-        p_chore_id: choreId,
-      });
-
-      if (error) throw new Error(error.message);
-
-      rewards.emit({ type: "confetti_small" });
-
-      setMsg("Submitted for approval. Mom will approve it soon.");
-      router.refresh();
-    } catch (e: any) {
-      setMsg(e?.message ?? "Could not submit chore.");
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  return (
-    <div style={{ display: "grid", gap: 12 }}>
-      {msg ? (
-        <div className="tile" style={{ opacity: 0.9 }}>
-          {msg}
-        </div>
-      ) : null}
-
-      <div style={{ display: "grid", gap: 10 }}>
-        {chores.map((c) => {
-          const pending = c.status === "PENDING_APPROVAL";
-          const approved = c.status === "APPROVED";
-
-          return (
-            <div
-              key={c.id}
-              className="tile"
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 12,
-                alignItems: "center",
-              }}
-            >
-              <div style={{ display: "grid", gap: 4 }}>
-                <div style={{ fontWeight: 800 }}>{c.title}</div>
-                <div style={{ fontSize: 12, opacity: 0.75 }}>
-                  {formatRs(c.price_cents)} ·{" "}
-                  {approved
-                    ? "Approved"
-                    : pending
-                    ? "Pending approval"
-                    : "Not done yet"}
-                </div>
-              </div>
-
-              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                {!approved && !pending ? (
-                  <button
-                    className="btn"
-                    disabled={busyId === c.id}
-                    onClick={() => submit(c.id)}
-                  >
-                    {busyId === c.id ? "Submitting..." : "Mark Complete"}
-                  </button>
-                ) : null}
-
-                {pending && c.completion_id ? (
-                  <ChoreActions completionId={c.completion_id} />
-                ) : null}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-export function ChoreActions({ completionId }: { completionId: string }) {
-  const supabase = useMemo(() => createClient(), []);
-  const router = useRouter();
-  const [msg, setMsg] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  async function revert() {
     setMsg(null);
-    setBusy(true);
 
-    try {
-      const { error } = await supabase
-        .from("chore_completions")
-        .delete()
-        .eq("id", completionId)
-        .eq("status", "PENDING_APPROVAL");
+    // Game feel
+    rewards.tap();
 
-      if (error) throw new Error(error.message);
+    const { data, error } = await supabase.rpc('record_chore_completion', { p_chore_id: choreId });
+    if (error) {
+      setMsg(error.message);
+    } else {
+      setLocal((prev) => prev.map((c) => (c.chore_id === choreId ? { ...c, completed_today: true } : c)));
 
-      rewards.emit({ type: "toast", message: "Reverted" });
+      const amt = local.find((c) => c.chore_id === choreId)?.price_rs ?? 0;
+      // Celebrate the action (even if approval is pending, this keeps kids engaged)
+      rewards.choreCompleted(amt);
 
-      setMsg("Submission reverted.");
+      setMsg('Submitted for approval. Earnings will be committed after Mom approves.');
+      // Refresh server-rendered wallet/reports data so earnings show immediately.
       router.refresh();
-    } catch (e: any) {
-      setMsg(e?.message ?? "Could not revert submission.");
-    } finally {
-      setBusy(false);
     }
-  }
+    setBusyId(null);
+  };
 
   return (
-    <div style={{ display: "grid", gap: 6 }}>
-      <button className="btn" disabled={busy} onClick={revert}>
-        {busy ? "Reverting..." : "Revert"}
-      </button>
-      {msg ? <div style={{ fontSize: 12, opacity: 0.75 }}>{msg}</div> : null}
+    <div style={{ display: 'grid', gap: 10 }}>
+      {msg ? <p style={{ color: 'crimson', margin: 0 }}>{msg}</p> : null}
+      {local.map((c) => (
+        <div key={c.chore_id} style={{ border: '1px solid #ddd', padding: 12, borderRadius: 8, display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center' }}>
+          <div>
+            <div style={{ fontWeight: 600 }}>{c.title}</div>
+            <div style={{ opacity: 0.8 }}>{formatRs(c.price_rs)}</div>
+          </div>
+          <button
+            disabled={c.completed_today || busyId === c.chore_id}
+            onClick={() => markDone(c.chore_id)}
+            style={{ padding: '10px 12px' }}
+          >
+            {c.completed_today ? 'Completed' : busyId === c.chore_id ? 'Saving...' : 'Mark complete'}
+          </button>
+        </div>
+      ))}
+      {local.length === 0 ? <p style={{ opacity: 0.8 }}>No chores assigned for today.</p> : null}
     </div>
   );
 }
