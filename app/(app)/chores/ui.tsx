@@ -15,8 +15,10 @@ type ChoreRow = {
 };
 
 export default function ChoresClient({
+  kidId, // kept for compatibility with page.tsx (even if not used here)
   chores,
 }: {
+  kidId: string | null;
   chores: ChoreRow[];
 }) {
   const supabase = useMemo(() => createClient(), []);
@@ -29,13 +31,12 @@ export default function ChoresClient({
     setBusyId(choreId);
 
     try {
-      const { data, error } = await supabase.rpc("record_chore_completion", {
+      const { error } = await supabase.rpc("record_chore_completion", {
         p_chore_id: choreId,
       });
 
       if (error) throw new Error(error.message);
 
-      // fun feedback
       rewards.emit({ type: "confetti_small" });
 
       setMsg("Submitted for approval. Mom will approve it soon.");
@@ -49,7 +50,11 @@ export default function ChoresClient({
 
   return (
     <div style={{ display: "grid", gap: 12 }}>
-      {msg ? <div className="tile" style={{ opacity: 0.9 }}>{msg}</div> : null}
+      {msg ? (
+        <div className="tile" style={{ opacity: 0.9 }}>
+          {msg}
+        </div>
+      ) : null}
 
       <div style={{ display: "grid", gap: 10 }}>
         {chores.map((c) => {
@@ -57,24 +62,42 @@ export default function ChoresClient({
           const approved = c.status === "APPROVED";
 
           return (
-            <div key={c.id} className="tile" style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+            <div
+              key={c.id}
+              className="tile"
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 12,
+                alignItems: "center",
+              }}
+            >
               <div style={{ display: "grid", gap: 4 }}>
                 <div style={{ fontWeight: 800 }}>{c.title}</div>
                 <div style={{ fontSize: 12, opacity: 0.75 }}>
-                  {formatRs(c.price_cents)}
-                  {" · "}
-                  {approved ? "Approved" : pending ? "Pending approval" : "Not done yet"}
+                  {formatRs(c.price_cents)} ·{" "}
+                  {approved
+                    ? "Approved"
+                    : pending
+                    ? "Pending approval"
+                    : "Not done yet"}
                 </div>
               </div>
 
               <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                 {!approved && !pending ? (
-                  <button className="btn" disabled={busyId === c.id} onClick={() => submit(c.id)}>
+                  <button
+                    className="btn"
+                    disabled={busyId === c.id}
+                    onClick={() => submit(c.id)}
+                  >
                     {busyId === c.id ? "Submitting..." : "Mark Complete"}
                   </button>
                 ) : null}
 
-                {pending && c.completion_id ? <ChoreActions completionId={c.completion_id} /> : null}
+                {pending && c.completion_id ? (
+                  <ChoreActions completionId={c.completion_id} />
+                ) : null}
               </div>
             </div>
           );
@@ -103,7 +126,7 @@ export function ChoreActions({ completionId }: { completionId: string }) {
 
       if (error) throw new Error(error.message);
 
-      rewards.emit({ type: "toast", message: "Reverted ✅" });
+      rewards.emit({ type: "toast", message: "Reverted" });
 
       setMsg("Submission reverted.");
       router.refresh();
