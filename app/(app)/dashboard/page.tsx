@@ -1,44 +1,66 @@
 // app/(app)/dashboard/page.tsx
-import { createClient } from '../../../lib/supabase/server';
-import { formatRs } from '../../../lib/money';
+import { createClient } from "../../../lib/supabase/server";
+import { formatRs } from "../../../lib/money";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  const { data: userRes } = await supabase.auth.getUser();
-  const user = userRes.user!;
+  const { data: userRes, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !userRes?.user) {
+    return (
+      <div style={{ padding: 16 }}>
+        <h1>Dashboard</h1>
+        <p>Not signed in.</p>
+      </div>
+    );
+  }
+  const user = userRes.user;
 
-  const { data: roleRow } = await supabase
-    .from('user_roles')
-    .select('role,family_id,kid_id')
-    .eq('user_id', user.id)
-    .single();
+  const { data: roleRow, error: roleErr } = await supabase
+    .from("user_roles")
+    .select("role,family_id,kid_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (roleErr || !roleRow) {
+    return (
+      <div style={{ padding: 16 }}>
+        <h1>Dashboard</h1>
+        <p style={{ opacity: 0.8 }}>
+          Your account is missing a role assignment. Please add a row in{" "}
+          <code>public.user_roles</code> for this user.
+        </p>
+      </div>
+    );
+  }
 
   const role = roleRow.role;
   const familyId = roleRow.family_id;
   const kidId = roleRow.kid_id;
 
   let q = supabase
-    .from('ledger_transactions')
-    .select(`
-      amount_cents,
-      spend_cents,
-      charity_cents,
-      invest_cents,
-      parent_match_cents,
-      source
-    `)
-    .eq('family_id', familyId)
-    .eq('source', 'CHORE_EARNING');
+    .from("ledger_transactions")
+    .select(
+      "amount_cents,spend_cents,charity_cents,invest_cents,parent_match_cents,source"
+    )
+    .eq("family_id", familyId)
+    .eq("source", "CHORE_EARNING");
 
-  if (role === 'child') q = q.eq('kid_id', kidId);
+  if (role === "child") q = q.eq("kid_id", kidId);
 
-  const { data: rows } = await q;
+  const { data: rows, error: rowsErr } = await q;
+  if (rowsErr) {
+    return (
+      <div style={{ padding: 16 }}>
+        <h1>Dashboard</h1>
+        <p>Error loading ledger: {rowsErr.message}</p>
+      </div>
+    );
+  }
 
   let earned = 0;
   let allowance = 0;
   let charity = 0;
-  let savings = 0;
   let invest = 0;
   let parentMatch = 0;
 
@@ -50,19 +72,18 @@ export default async function DashboardPage() {
     parentMatch += r.parent_match_cents ?? 0;
   }
 
-  savings = invest - parentMatch;
+  const savings = invest - parentMatch;
   const parentPayable = earned + parentMatch;
 
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
+    <div style={{ display: "grid", gap: 16 }}>
       <h1>Dashboard</h1>
 
-      {/* ===================== KID VIEW ===================== */}
-      {role === 'child' && (
+      {role === "child" && (
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
             gap: 12,
           }}
         >
@@ -91,18 +112,17 @@ export default async function DashboardPage() {
             <div className="amt">{formatRs(invest)}</div>
           </div>
 
-          <div style={{ gridColumn: '1 / -1', fontSize: 13, opacity: 0.7 }}>
+          <div style={{ gridColumn: "1 / -1", fontSize: 13, opacity: 0.7 }}>
             Earnings update only after Mom approves.
           </div>
         </div>
       )}
 
-      {/* ===================== PARENT VIEW ===================== */}
-      {role === 'parent' && (
+      {role === "parent" && (
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
             gap: 12,
           }}
         >
